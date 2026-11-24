@@ -7,10 +7,14 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any
+import base64
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # dùng pktlib đi kèm dự án
 
 MAX_DEVICES = 100
 MAX_CONNECTIONS = 300
-HOST_TYPES = {"pc", "laptop"}
+HOST_TYPES = {"pc", "laptop", "server"}
 ROUTER_MODELS = {"2811", "2911"}
 PORTS = {
     "router": {
@@ -21,7 +25,39 @@ PORTS = {
     "pc": {"fa0"},
     "laptop": {"fa0"},
 }
+FAMILY = {"router": {"router"}, "switch": {"switch", "multilayer"}, "pc": {"pc"}, "laptop": {"laptop"}, "server": {"server"}}
+DEFAULT_MODEL = {"router": "2911", "switch": "2960-24TT", "pc": "PC-PT", "laptop": "Laptop-PT", "server": "Server-PT"}
 NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,31}$")
+
+
+def _spec() -> dict:
+    """Danh mục thiết bị thật của pktlib (rỗng nếu pktlib không có, ví dụ khi chạy test với bản giả)."""
+    try:
+        from pktlib import _model
+        return _model.SPEC
+    except Exception:
+        return {}
+
+
+def _short(port: str) -> str:
+    return port.replace("FastEthernet", "fa").replace("GigabitEthernet", "g").replace("Serial", "s").replace("Ethernet", "e").lower()
+
+
+def _ports_for(device: dict[str, Any]) -> set[str]:
+    spec = _spec().get(str(device.get("model") or DEFAULT_MODEL.get(device["type"], "")))
+    if spec:
+        return {_short(p) for p in spec["wired"]}
+    if device["type"] == "router":
+        return PORTS["router"].get(str(device.get("model") or "2911"), set())
+    return PORTS.get(device["type"], set())
+
+
+def catalog() -> list[dict[str, Any]]:
+    """Mọi model pktlib xuất được, kèm cổng thật, để giao diện hiển thị khay thiết bị."""
+    import pktlib
+    spec = _spec()
+    return [{"model": m, "family": spec[m]["family"], "ios": bool(spec[m]["ios"]), "ports": spec[m]["wired"]}
+            for m in pktlib.models()]
 
 
 class TopologyError(ValueError):
@@ -64,10 +100,10 @@ def _validate_payload(payload: Any) -> tuple[list[dict[str, Any]], list[dict[str
         if not isinstance(device, dict):
             raise TopologyError("Một thiết bị trong sơ đồ không hợp lệ.")
         kind = device.get("type")
-        if kind not in {"pc", "laptop", "router", "switch"}:
+        if kind not in {"pc", "laptop", "server", "router", "switch"}:
             raise TopologyError(
                 f"Thiết bị “{device.get('name', kind)}” chưa được hỗ trợ xuất .pkt. "
-                "Hiện hỗ trợ PC, Laptop, Router và Switch."
+                "Hiện hỗ trợ PC, Laptop, Server, Router và Switch."
             )
         device_id = str(device.get("id", ""))
         name = str(device.get("name", "")).strip()
@@ -83,8 +119,9 @@ def _validate_payload(payload: Any) -> tuple[list[dict[str, Any]], list[dict[str
         seen_ids.add(device_id)
         seen_names.add(folded)
 
-        if kind == "router" and str(device.get("model") or "2911") not in ROUTER_MODELS:
-            raise TopologyError(f"Model router của {name} chưa được hỗ trợ.")
+        spec = _spec().get(str(device.get("model") or DEFAULT_MODEL[kind]))
+        if (spec and spec["family"] not in FAMILY[kind]) or (not _spec() and kind == "router" and str(device.get("model") or "2911") not in ROUTER_MODELS) or (_spec() and not spec):
+            raise TopologyError(f"Model {device.get('model')} của {name} chưa được hỗ trợ cho loại {kind}.")
         if kind == "router" and not isinstance(device.get("interfaces", []), list):
             raise TopologyError(f"Danh sách interface của {name} không hợp lệ.")
         if kind == "switch":
@@ -128,9 +165,7 @@ def _validate_payload(payload: Any) -> tuple[list[dict[str, Any]], list[dict[str
             raise TopologyError("Mỗi kết nối cần có cổng ở cả hai đầu.")
         for device_id, port in ((from_id, from_port), (to_id, to_port)):
             device = by_id[device_id]
-            allowed = PORTS.get(device["type"], set())
-            if device["type"] == "router":
-                allowed = PORTS["router"][str(device.get("model") or "2911")]
+            allowed = _ports_for(device)
             if port not in allowed:
                 raise TopologyError(f"Cổng {port} không hợp lệ trên {device['name']}.")
             key = (device_id, port)
@@ -205,6 +240,7 @@ def _router_config(
     interfaces = device.get("interfaces") or []
     covered_ports: set[str] = set()
     subinterface_lines: list[str] = []
+    sub_bases: list[str] = []
     for iface in interfaces:
         if not isinstance(iface, dict) or not iface.get("ip"):
             continue
@@ -225,14 +261,17 @@ def _router_config(
                 " exit",
             ])
             covered_ports.add(base)
+            if base not in sub_bases:
+                sub_bases.append(base)
         else:
             port = name.split(".", 1)[0]
             address = _address(iface["ip"], iface.get("cidr", 24))
-            if port and port in PORTS["router"][str(device.get("model") or "2911")]:
+            if port and port in _ports_for(device):
                 router[port].address = address
                 covered_ports.add(port)
 
-    config_lines = subinterface_lines[:]
+    # Cổng vật lý của router-on-a-stick phải được bật, nếu không mọi subinterface đều down.
+    config_lines = [line for base in sub_bases for line in (f"interface {base}", " no shutdown", " exit")] + subinterface_lines
     # The simplified router IP field remains useful for direct router labs.
     top_config = device.get("config") or {}
     if top_config.get("ip") and not covered_ports:
@@ -274,8 +313,8 @@ def _router_config(
         router.config("\n".join(all_lines))
 
 
-def build_pkt_bytes(payload: Any, pktlib_module: Any = None) -> bytes:
-    """Build a .pkt in memory through pktlib; the module may be injected in tests."""
+def build_network(payload: Any, pktlib_module: Any = None) -> tuple[Any, Any]:
+    """Dựng mạng trong bộ nhớ bằng pktlib; trả về (network, module). Module có thể được tiêm khi test."""
     devices, connections = _validate_payload(payload)
     firewall_rules = payload.get("firewallRules") or []
     if not isinstance(firewall_rules, list):
@@ -300,7 +339,8 @@ def build_pkt_bytes(payload: Any, pktlib_module: Any = None) -> bytes:
             model = str(device.get("model") or "2911")
             obj = net.router(name, model, at=(x, y))
         elif kind == "switch":
-            obj = net.switch(name, at=(x, y))
+            model = str(device.get("model") or "2960-24TT")
+            obj = net.switch(name, at=(x, y)) if model == "2960-24TT" else net.switch(name, model, at=(x, y))
         else:
             config = device.get("config") or {}
             kwargs: dict[str, Any] = {"at": (x, y)}
@@ -309,7 +349,7 @@ def build_pkt_bytes(payload: Any, pktlib_module: Any = None) -> bytes:
                 kwargs["ip"] = address
             if config.get("gateway"):
                 kwargs["gateway"] = str(config["gateway"])
-            obj = net.pc(name, **kwargs)
+            obj = getattr(net, kind)(name, **kwargs)
         objects[str(device["id"])] = obj
 
     for connection in connections:
@@ -325,7 +365,19 @@ def build_pkt_bytes(payload: Any, pktlib_module: Any = None) -> bytes:
                 objects[str(device["id"])].config(config)
         elif kind == "router":
             _router_config(device, objects[str(device["id"])], connections, firewall_rules)
+        cli = str(device.get("cli") or "").strip()
+        if cli and kind in {"switch", "router"}:
+            try:
+                objects[str(device["id"])].config(cli)
+            except Exception as exc:
+                raise TopologyError(f"Lệnh IOS trên {device['name']} không hợp lệ: {exc}") from exc
 
+    return net, pktlib_module
+
+
+def build_pkt_bytes(payload: Any, pktlib_module: Any = None) -> bytes:
+    """Build a .pkt in memory through pktlib; the module may be injected in tests."""
+    net, _ = build_network(payload, pktlib_module)
     filename = str(payload.get("name") or "topology")
     filename = re.sub(r"[^A-Za-z0-9_-]+", "_", filename).strip("_")[:48] or "topology"
     with tempfile.TemporaryDirectory(prefix="simulan-pkt-") as tmp:
@@ -346,3 +398,94 @@ def decode_request(raw: bytes) -> dict[str, Any]:
         raise TopologyError("Dữ liệu sơ đồ không hợp lệ.")
     return payload
 
+
+
+def load_pkt(raw: bytes) -> dict[str, Any]:
+    """Đọc file .pkt bằng pktlib và trả về sơ đồ theo định dạng của giao diện (thiết bị, dây, IP, VLAN, interface)."""
+    import ipaddress
+    import pktlib
+    net = pktlib.Network.from_bytes(raw)
+    spec = _spec()
+    kinds = {"router": "router", "switch": "switch", "multilayer": "switch", "pc": "pc", "laptop": "laptop", "server": "server"}
+    items: dict[str, dict[str, Any]] = {}
+    modes: dict[str, dict[str, dict[str, Any]]] = {}
+    skipped = 0
+    for index, dev in enumerate(net.devices):
+        family = (spec.get(dev.model) or {}).get("family", "")
+        kind = kinds.get(family)
+        if not kind or dev.model == "Meraki-Server":
+            skipped += 1
+            continue
+        item: dict[str, Any] = {"id": f"d{index + 1}", "type": kind, "name": dev.name, "model": dev.model,
+                                "x": int(dev.xy[0]), "y": int(dev.xy[1]), "config": {}}
+        items[dev.name] = item
+        if kind in HOST_TYPES:
+            try:
+                nic = ipaddress.IPv4Interface(str(dev["fa0"].address))
+                item["config"] = {"ip": str(nic.ip), "cidr": nic.network.prefixlen, "gateway": str(dev.gateway or "")}
+            except Exception:
+                pass
+            continue
+        cur, ifaces, ports = None, [], {}
+        for line in dev.running_config:
+            text = line.strip()
+            if line.startswith("interface "):
+                cur = _short(line.split(None, 1)[1])
+                if kind == "router":
+                    ifaces.append({"name": cur, "ip": "", "cidr": 24, "vlan": None})
+            elif cur and kind == "router" and text.startswith("encapsulation dot1Q"):
+                ifaces[-1]["vlan"] = int(text.split()[2])
+            elif cur and kind == "router" and text.startswith("ip address ") and "no" not in line.split()[:1]:
+                parts = text.split()
+                if len(parts) >= 4:
+                    ifaces[-1]["ip"], ifaces[-1]["cidr"] = parts[2], ipaddress.IPv4Network(f"0.0.0.0/{parts[3]}").prefixlen
+            elif cur and kind == "switch" and text.startswith("switchport mode "):
+                ports.setdefault(cur, {"mode": "access", "vlan": 1})["mode"] = text.split()[2]
+            elif cur and kind == "switch" and text.startswith("switchport access vlan "):
+                ports.setdefault(cur, {"mode": "access", "vlan": 1})["vlan"] = int(text.split()[3])
+        if kind == "router":
+            item["interfaces"] = [i for i in ifaces if i["ip"]]
+        else:
+            item["vlans"] = sorted({1, *(v for v in dev.vlans if v < 1002)})
+            modes[dev.name] = ports
+    connections = []
+    for number, link in enumerate(net.links, 1):
+        a, b = link.ends
+        if a.device not in items or b.device not in items:
+            continue
+        cid = f"c{number}"
+        connections.append({"id": cid, "from": items[a.device]["id"], "fromPort": _short(a.port),
+                            "to": items[b.device]["id"], "toPort": _short(b.port)})
+        for end in (a, b):
+            if items[end.device]["type"] == "switch":
+                items[end.device].setdefault("ports", {})[cid] = modes[end.device].get(_short(end.port), {"mode": "access", "vlan": 1})
+    return {"name": "imported", "devices": list(items.values()), "connections": connections, "firewallRules": [], "skipped": skipped}
+
+
+def _json(status: int, payload: Any) -> tuple[int, str, bytes, None]:
+    return status, "application/json; charset=utf-8", json.dumps(payload, ensure_ascii=False).encode("utf-8"), None
+
+
+def handle(raw: bytes) -> tuple[int, str, bytes, str | None]:
+    """Một cửa cho POST /api/export: export (mặc định) | check | script | import | catalog."""
+    try:
+        payload = decode_request(raw)
+        action = payload.get("action", "export")
+        if action == "catalog":
+            return _json(200, catalog())
+        if action == "import":
+            return _json(200, load_pkt(base64.b64decode(str(payload.get("pkt", "")))))
+        if action in {"check", "script"}:
+            net, module = build_network(payload)
+            if action == "check":
+                return _json(200, {"problems": [str(item) for item in module.audit(net)]})
+            return _json(200, {"script": module.to_python(net)})
+        data = build_pkt_bytes(payload)
+        safe = re.sub(r"[^A-Za-z0-9_-]+", "_", str(payload.get("name") or "topology")).strip("_")[:48] or "topology"
+        return 200, "application/octet-stream", data, f"{safe}.pkt"
+    except TopologyError as exc:
+        return _json(400, {"error": str(exc)})
+    except RuntimeError as exc:
+        return _json(503, {"error": str(exc)})
+    except Exception as exc:
+        return _json(422, {"error": f"Không xử lý được yêu cầu: {exc}"})

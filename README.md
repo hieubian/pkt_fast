@@ -1,4 +1,17 @@
-# SimuLAN Studio
+# SimuLAN PacketLab
+
+Giao diện kiểu Cisco Packet Tracer (thanh công cụ trên, công cụ dọc bên trái, khay thiết bị theo nhóm ở dưới, chế độ Realtime/Simulation) chạy trên bộ mô phỏng SimuLAN và dùng pktlib cho mọi thao tác với file Packet Tracer.
+
+## Tích hợp pktlib
+
+- **Khay thiết bị**: lấy từ danh mục pktlib (router, switch, switch tầng 3, PC, Laptop, Server) cùng cổng thật của từng model; đổi model trong bảng thuộc tính, dây tự đổi sang cổng tương ứng.
+- **Kiểm tra**: mở hộp **Xuất .pkt** sẽ chạy `pktlib.audit` (địa chỉ trùng, cổng shutdown, gateway sai…).
+- **Lệnh IOS bổ sung**: ô CLI trên router/switch được pktlib ghép vào cấu hình (OSPF, DHCP, NAT… tùy bạn gõ).
+- **Nhập .pkt**: đọc file Packet Tracer (thiết bị, dây, IP, VLAN, interface, subinterface) thành sơ đồ.
+- **Mã Python**: `pktlib.to_python` sinh script dựng lại sơ đồ.
+- pktlib được đặt sẵn trong thư mục `pktlib/` nên không cần `pip install`.
+
+## Gốc: SimuLAN Studio
 
 Trình thiết kế và mô phỏng sơ đồ mạng chạy trên trình duyệt, giao diện viết lại theo phong cách Apple, có xuất file Cisco Packet Tracer `.pkt`.
 

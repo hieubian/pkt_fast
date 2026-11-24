@@ -3,11 +3,10 @@ from __future__ import annotations
 
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
-import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-from pkt_builder import TopologyError, build_pkt_bytes, decode_request
+from pkt_builder import handle
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY_BYTES = 1_500_000
@@ -35,7 +34,7 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self) -> None:
-        if urlparse(self.path).path != "/api/export":
+        if urlparse(self.path).path.rstrip("/") not in {"/api/export"}:
             self._json(404, {"error": "Không tìm thấy API."})
             return
         try:
@@ -46,29 +45,15 @@ class Handler(SimpleHTTPRequestHandler):
         if length <= 0 or length > MAX_BODY_BYTES:
             self._json(413, {"error": "Yêu cầu trống hoặc vượt giới hạn 1,5 MB."})
             return
-        try:
-            payload = decode_request(self.rfile.read(length))
-            pkt_data = build_pkt_bytes(payload)
-            name = str(payload.get("name") or "topology")
-            safe_name = re.sub(r"[^A-Za-z0-9_-]+", "_", name).strip("_")[:48] or "topology"
-        except TopologyError as exc:
-            self._json(400, {"error": str(exc)})
-            return
-        except RuntimeError as exc:
-            self._json(503, {"error": str(exc)})
-            return
-        except Exception:
-            self._json(422, {"error": "Không thể tạo file từ cấu hình này. Hãy kiểm tra model và cổng thiết bị."})
-            return
-
-        self.send_response(200)
-        self.send_header("Content-Type", "application/octet-stream")
-        self.send_header("Content-Disposition", f'attachment; filename="{safe_name}.pkt"')
-        self.send_header("Content-Length", str(len(pkt_data)))
+        status, ctype, body, filename = handle(self.rfile.read(length))
+        self.send_response(status)
+        self.send_header("Content-Type", ctype)
+        if filename:
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(pkt_data)
-
+        self.wfile.write(body)
 
 if __name__ == "__main__":
     address = ("127.0.0.1", 8000)

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>SimuLAN Studio</title>
+<title>SimuLAN PacketLab</title>
 <style>
 :root{--bg:#f5f5f7;--card:#fff;--pn:rgba(255,255,255,.76);--ink:#1d1d1f;--mut:#6e6e73;--ln:rgba(0,0,0,.12);--ac:#007aff;--ok:#28a745;--bad:#ff3b30;--warn:#ff9f0a;--fld:rgba(0,0,0,.05);--grid:rgba(0,0,0,.14)}
 @media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--card:#3a3a3c;--pn:rgba(44,44,46,.76);--ink:#f5f5f7;--mut:#a1a1a6;--ln:rgba(255,255,255,.16);--ac:#0a84ff;--ok:#30d158;--fld:rgba(255,255,255,.09);--grid:rgba(255,255,255,.16)}}
@@ -10,15 +10,16 @@ body{font:13px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Sego
 button,input,select{font:inherit;color:inherit}
 .glass{background:var(--pn);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border:.5px solid var(--ln);box-shadow:0 8px 30px rgba(0,0,0,.12);border-radius:16px}
 #cv{position:fixed;inset:0;width:100%;height:100%;touch-action:none;background-image:radial-gradient(var(--grid) 1px,transparent 1.2px);background-size:24px 24px;cursor:default}
-.bar{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;padding:5px;z-index:5;max-width:calc(100% - 24px);overflow-x:auto}
+.bar{position:fixed;top:0;left:0;right:0;display:flex;gap:4px;align-items:center;padding:6px 12px;padding-top:max(6px,env(safe-area-inset-top));z-index:5;overflow-x:auto;border-radius:0;border-width:0 0 .5px}
 .b{border:0;background:transparent;border-radius:10px;padding:7px 11px;cursor:pointer;white-space:nowrap}
 .b:hover{background:var(--fld)}.b.on{background:var(--ac);color:#fff}.b.p{background:var(--ac);color:#fff;font-weight:600}.b:disabled{opacity:.35;cursor:default}
 .sep{width:1px;height:20px;background:var(--ln);flex:none}
 #ti{border:0;background:transparent;font-weight:600;width:130px;padding:7px 8px;border-radius:10px;outline:0}#ti:focus{background:var(--fld)}
-#dock{position:fixed;left:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;padding:6px;z-index:4}
-.dk{width:64px;padding:8px 4px;border-radius:12px;text-align:center;cursor:grab;font-size:11px;color:var(--mut);border:0;background:none}.dk:hover{background:var(--fld);color:var(--ink)}
+#dock{position:fixed;left:0;right:0;bottom:0;height:138px;display:flex;z-index:4;border-radius:0;border-width:.5px 0 0;padding:0 0 env(safe-area-inset-bottom)}#cats{width:156px;flex:none;display:flex;flex-direction:column;gap:2px;padding:8px;border-right:.5px solid var(--ln);overflow:auto}#cats .b{text-align:left}#mods{display:flex;gap:8px;padding:10px;overflow-x:auto;flex:1;align-items:flex-start}#rt{position:fixed;left:12px;top:64px;display:flex;flex-direction:column;gap:2px;padding:6px;z-index:4}#rt .b{display:flex;flex-direction:column;align-items:center;width:56px;padding:8px 2px;font-size:11px;gap:2px}#rt .b i{font-style:normal;font-size:18px;line-height:1}.seg{display:flex;background:var(--fld);border-radius:10px;padding:2px;margin-left:auto}.seg .b{padding:4px 12px}textarea.i{font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
+.dk{flex:0 0 112px;padding:8px 4px;border-radius:12px;text-align:center;cursor:grab;font-size:11px;color:var(--ink);border:.5px solid var(--ln);background:var(--fld)}.dk:hover{background:var(--fld);color:var(--ink)}
+svg.ic2{display:block;margin:0 auto 4px;width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 svg.i{display:block;margin:0 auto 3px;width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-#insp{position:fixed;right:12px;top:68px;bottom:12px;width:316px;overflow:auto;padding:16px;z-index:4}
+#insp{position:fixed;right:12px;top:58px;bottom:150px;width:316px;overflow:auto;padding:16px;z-index:4}
 h3{margin:0 0 2px;font-size:17px;letter-spacing:-.02em}h4{margin:18px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:600}
 .mut{color:var(--mut)}.sm{font-size:11px}
 .f{display:flex;flex-direction:column;gap:4px;margin:8px 0}.f>span{font-size:11px;color:var(--mut)}
@@ -37,48 +38,47 @@ h3{margin:0 0 2px;font-size:17px;letter-spacing:-.02em}h4{margin:18px 0 6px;font
 .hd{fill:var(--ac);opacity:0;cursor:crosshair}.nd:hover .hd,.nd.sel .hd,.lm .hd{opacity:1}
 .lk{stroke:var(--mut);stroke-width:2.5;fill:none}.lk.tr{stroke:var(--ac)}.lk.sel{stroke:var(--warn);stroke-width:4}.hit{stroke:transparent;stroke-width:16;cursor:pointer}
 .pl{font-size:10px;fill:var(--mut);paint-order:stroke;stroke:var(--bg);stroke-width:4px;text-anchor:middle;pointer-events:none}
-#hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:9px 16px;z-index:5;display:none}
-#res{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));padding:14px 16px;z-index:6;display:none}
+#hint{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);padding:9px 16px;z-index:5;display:none}
+#res{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));padding:14px 16px;z-index:6;display:none}
 #res pre{margin:8px 0 0;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);white-space:pre-wrap}
 #toast{position:fixed;top:70px;left:50%;transform:translate(-50%,-8px);padding:9px 16px;z-index:9;opacity:0;pointer-events:none;transition:.25s}#toast.on{opacity:1;transform:translate(-50%,0)}
 #pop{position:fixed;z-index:8;padding:6px;display:none;min-width:200px}#pop button{display:block;width:100%;text-align:left}
 .sc{position:fixed;inset:0;background:rgba(0,0,0,.3);display:grid;place-items:center;z-index:10}.md{width:min(440px,calc(100% - 24px));padding:20px;background:var(--card)}
 ul.e{margin:8px 0;padding-left:18px;color:var(--bad)}ul.w{margin:8px 0;padding-left:18px;color:var(--warn)}
-@media(max-width:820px){#insp{top:auto;height:44vh;left:12px;width:auto}#dock{top:68px;transform:none;flex-direction:row;left:12px}.dk{width:54px}}
+@media(max-width:820px){#insp{top:auto;height:34vh;left:12px;width:auto}#cats{width:112px}#rt{flex-direction:row;left:auto;right:12px;top:58px}}
 </style></head><body>
 <svg id="cv"><g id="vp"><g id="lk"></g><g id="nd"></g><g id="pk"></g></g></svg>
 <div class="bar glass">
  <input id="ti" aria-label="Tên sơ đồ" spellcheck="false">
  <i class="sep"></i>
- <button class="b on" id="t-select" title="Chọn (V)">Chọn</button>
- <button class="b" id="t-link" title="Nối dây (C)">Nối dây</button>
- <button class="b" id="t-ping" title="Ping (P)">Ping</button>
- <i class="sep"></i>
- <button class="b" id="un" title="Hoàn tác (⌘Z)">↶</button><button class="b" id="re" title="Làm lại (⇧⌘Z)">↷</button>
+  <button class="b" id="un" title="Hoàn tác (⌘Z)">↶</button><button class="b" id="re" title="Làm lại (⇧⌘Z)">↷</button>
  <i class="sep"></i>
  <button class="b" id="mm">Mẫu ▾</button><button class="b" id="sv">Lưu</button><button class="b" id="op">Mở</button>
- <button class="b p" id="ex">Xuất .pkt</button>
+ <button class="b" id="ip">Nhập .pkt</button><button class="b p" id="ex">Xuất .pkt</button>
+ <div class="seg"><button class="b on" id="m-r">Realtime</button><button class="b" id="m-s">Simulation</button></div>
 </div>
+<nav id="rt" class="glass" aria-label="Công cụ"><button class="b on" id="t-select" title="Chọn (V)"><i>↖</i>Chọn</button><button class="b" id="t-link" title="Nối dây (C)"><i>⌁</i>Nối dây</button><button class="b" id="t-ping" title="Ping (P)"><i>✉</i>Ping</button><button class="b" id="t-del" title="Xóa (Delete)"><i>✕</i>Xóa</button></nav>
 <nav id="dock" class="glass" aria-label="Thiết bị"></nav>
 <aside id="insp" class="glass"></aside>
 <div id="hint" class="glass"></div><div id="res" class="glass"></div><div id="toast" class="glass"></div>
 <div id="pop" class="glass"></div><div id="ms"></div>
-<input type="file" id="fi" accept=".json,application/json" hidden>
+<input type="file" id="fi" accept=".json,application/json" hidden><input type="file" id="fp" accept=".pkt" hidden>
 <script>
 (()=>{
 const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TY={pc:'PC',laptop:'Laptop',switch:'Switch',router:'Router'},PFX={pc:'PC',laptop:'Laptop',switch:'SW',router:'R'};
-const IC={pc:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',laptop:'<path d="M5 6a1 1 0 011-1h12a1 1 0 011 1v9H5z"/><path d="M2 18h20"/>',switch:'<rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/>',router:'<circle cx="12" cy="12" r="8"/><path d="M12 7v10M7 12h10M9.5 9.5L12 7l2.5 2.5M9.5 14.5L12 17l2.5-2.5"/>'};
+const TY={pc:'PC',laptop:'Laptop',server:'Server',switch:'Switch',router:'Router'},PFX={pc:'PC',laptop:'Laptop',server:'SRV',switch:'SW',router:'R'},DM={pc:'PC-PT',laptop:'Laptop-PT',server:'Server-PT',switch:'2960-24TT',router:'2911'},FAM={router:'router',switch:'switch',multilayer:'switch',pc:'pc',laptop:'laptop',server:'server'};
+let CAT=[],sim=false;const spec=m=>CAT.find(x=>x.model==m),sn=p=>p.replace('FastEthernet','fa').replace('GigabitEthernet','g').replace('Serial','s').replace(/^Ethernet/,'e').toLowerCase();
+const IC={server:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 13h8M9 17h.01"/>',pc:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',laptop:'<path d="M5 6a1 1 0 011-1h12a1 1 0 011 1v9H5z"/><path d="M2 18h20"/>',switch:'<rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/>',router:'<circle cx="12" cy="12" r="8"/><path d="M12 7v10M7 12h10M9.5 9.5L12 7l2.5 2.5M9.5 14.5L12 17l2.5-2.5"/>'};
 const NAME=/^[A-Za-z][A-Za-z0-9_-]{0,31}$/;
 let S,sel=null,selC=null,tool='select',ps=null,V={x:0,y:0,k:1},hist=[],hi=-1,seq=0,drag=null,res=null,flash=null;
-const cv=$('#cv'),D=()=>S.devices,C=()=>S.connections,get=id=>D().find(d=>d.id==id),isH=d=>d.type=='pc'||d.type=='laptop';
+const cv=$('#cv'),D=()=>S.devices,C=()=>S.connections,get=id=>D().find(d=>d.id==id),isH=d=>d.type=='pc'||d.type=='laptop'||d.type=='server';
 /* ---------- IP ---------- */
 const ip2n=s=>{const p=String(s||'').trim().split('.');if(p.length!=4||p.some(x=>!/^\d{1,3}$/.test(x)||+x>255))return null;return((+p[0]<<24)|(+p[1]<<16)|(+p[2]<<8)|+p[3])>>>0};
 const msk=c=>c<=0?0:(0xFFFFFFFF<<(32-c))>>>0,nw=(ip,c)=>(ip2n(ip)&msk(+c))>>>0;
 const inNet=(ip,cd)=>{if(!cd||cd=='any'||cd=='*')return true;const[a,b]=String(cd).split('/'),c=b==null?32:+b;return ip2n(ip)!=null&&ip2n(a)!=null&&nw(ip,c)==nw(a,c)};
 const okCidr=s=>s=='any'||(/^\d+\.\d+\.\d+\.\d+\/\d{1,2}$/.test(s)&&ip2n(s.split('/')[0])!=null&&+s.split('/')[1]<=32);
 /* ---------- Ports & links ---------- */
-const ports=d=>d.type=='router'?(d.model=='2811'?['fa0/0','fa0/1']:['g0/0','g0/1','g0/2']):d.type=='switch'?Array.from({length:24},(_,i)=>'fa0/'+(i+1)):['fa0'];
+const ports=d=>{const s=spec(d.model);return s?s.ports.map(sn):d.type=='router'?(d.model=='2811'?['fa0/0','fa0/1']:['g0/0','g0/1','g0/2']):d.type=='switch'?Array.from({length:24},(_,i)=>'fa0/'+(i+1)):['fa0']};
 const used=(d,p)=>C().find(c=>(c.from==d.id&&c.fromPort==p)||(c.to==d.id&&c.toPort==p));
 const freePort=d=>ports(d).find(p=>!used(d,p));
 const peer=(d,p)=>{const c=used(d,p);if(!c)return null;return c.from==d.id&&c.fromPort==p?{c,d:get(c.to),p:c.toPort}:{c,d:get(c.from),p:c.fromPort}};
@@ -138,9 +138,9 @@ function pingSim(a,b){
  return{ok:true,msg:`Thông — ${a.name} → ${b.name} (${tip})`,lines:L,hops}}
 /* ---------- Trạng thái ---------- */
 const blank=n=>({name:n||'topology',devices:[],connections:[],firewallRules:[]});
-function norm(d){d.config=d.config||{};d.x=+d.x||0;d.y=+d.y||0;
+function norm(d){d.model=(spec(d.model)&&d.model)||DM[d.type];d.cli=d.cli||'';d.config=d.config||{};d.x=+d.x||0;d.y=+d.y||0;
  if(isH(d)){d.config.ip??='';d.config.cidr=+d.config.cidr||24;d.config.gateway??=''}
- if(d.type=='router'){d.model=d.model=='2811'?'2811':'2911';d.interfaces=Array.isArray(d.interfaces)?d.interfaces.filter(i=>i&&i.name).map(i=>({...i,name:String(i.name).toLowerCase(),ip:i.ip||'',cidr:+i.cidr||24})):[]}
+ if(d.type=='router'){d.interfaces=Array.isArray(d.interfaces)?d.interfaces.filter(i=>i&&i.name).map(i=>({...i,name:String(i.name).toLowerCase(),ip:i.ip||'',cidr:+i.cidr||24})):[]}
  if(d.type=='switch'){d.vlans=(Array.isArray(d.vlans)&&d.vlans.length?d.vlans:[1]).map(Number);if(!d.vlans.includes(1))d.vlans.unshift(1);d.ports=d.ports&&typeof d.ports=='object'?d.ports:{}}return d}
 function load(o){
  const ok=new Set(Object.keys(TY));let drop=0;S=blank(String(o.name||'topology'));
@@ -148,15 +148,15 @@ function load(o){
  const ids=new Set(D().map(d=>d.id));
  S.connections=(o.connections||[]).filter(c=>ids.has(c.from)&&ids.has(c.to)&&c.fromPort&&c.toPort).map(c=>({...c,fromPort:String(c.fromPort).toLowerCase(),toPort:String(c.toPort).toLowerCase()}));
  S.firewallRules=(o.firewallRules||[]).filter(r=>r.source&&r.dest).map(r=>({source:r.source,dest:r.dest,action:'deny'}));
- seq=100;sel=selC=null;V={x:0,y:0,k:1};hist=[];hi=-1;commit();if(drop)toast(`Đã bỏ ${drop} thiết bị không hỗ trợ (Server, AP, Firewall…).`)}
+ seq=100;sel=selC=null;V={x:0,y:0,k:1};hist=[];hi=-1;commit();if(drop)toast(`Đã bỏ ${drop} thiết bị không hỗ trợ (AP, Cloud, Firewall…).`)}
 function commit(keep){const j=JSON.stringify(S);if(hist[hi]!==j){hist=hist.slice(0,hi+1);hist.push(j);if(hist.length>80)hist.shift();hi=hist.length-1;try{localStorage.setItem('simulan.v2',j)}catch(e){}}draw(keep)}
 function undo(n){const t=hi+n;if(t<0||t>=hist.length)return;hi=t;S=JSON.parse(hist[hi]);sel=selC=null;draw()}
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3000)}
 /* ---------- Thao tác ---------- */
-function addDev(type,x,y,name,q){
+function addDev(type,x,y,name,q,model){
  let n=1;while(D().some(d=>d.name.toLowerCase()==(name||PFX[type]+n).toLowerCase())&&!name)n++;
- const d=norm({id:'d'+(++seq),type,name:name||PFX[type]+n,x:Math.round(x),y:Math.round(y)});
- if(type=='router')d.model='2911';D().push(d);if(!q){sel=d.id;selC=null;commit()}return d}
+ const d=norm({id:'d'+(++seq),type,name:name||PFX[type]+n,x:Math.round(x),y:Math.round(y),model});
+ D().push(d);if(!q){sel=d.id;selC=null;commit()}return d}
 function connect(a,b,q){
  if(a.id==b.id)return;
  if(C().some(c=>(c.from==a.id&&c.to==b.id)||(c.from==b.id&&c.to==a.id)))return toast('Hai thiết bị đã được nối với nhau.');
@@ -168,7 +168,7 @@ function rmConn(id){C().forEach(c=>{if(c.id==id)[c.from,c.to].forEach(x=>{const 
 function del(){if(sel){const d=get(sel);C().filter(c=>c.from==sel||c.to==sel).forEach(c=>rmConn(c.id));S.devices=D().filter(x=>x.id!=sel);sel=null;toast(`Đã xóa ${d.name}.`)}else if(selC){rmConn(selC);selC=null}else return;commit()}
 function freeSpot(x,y){for(let i=0;i<40;i++){if(!D().some(d=>Math.abs(d.x-x)<90&&Math.abs(d.y-y)<90))break;x+=40;if(i%6==5){x-=240;y+=90}}return[x,y]}
 const W=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-V.x)/V.k,y:(e.clientY-r.top-V.y)/V.k}};
-function dropAt(t,x,y){const[a,b]=freeSpot(x,y);addDev(t,a,b)}
+function dropAt(t,x,y,m){const[a,b]=freeSpot(x,y);addDev(t,a,b,null,0,m)}
 /* ---------- Vẽ ---------- */
 const pt=(a,b,d)=>{const dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return[a.x+dx/l*d,a.y+dy/l*d+3]};
 function paint(){
@@ -192,6 +192,7 @@ function draw(keep){
  if(!keep)insp()}
 /* ---------- Inspector ---------- */
 const fld=(l,h)=>`<label class="f"><span>${l}</span>${h}</label>`;
+const mdl=d=>fld('Model',`<select class="i" onchange="A.model(this.value)">${CAT.filter(x=>FAM[x.family]==d.type).map(x=>`<option ${x.model==d.model?'selected':''}>${x.model}</option>`).join('')}</select>`);
 const peerName=(d,p)=>{const x=peer(d,p);return x?`${E(x.d.name)} · ${x.p}`:'Chưa nối'};
 function dup(d){const ip=d.config.ip;if(ip2n(ip)==null)return'';const o=D().find(x=>x.id!=d.id&&((isH(x)&&x.config.ip==ip)||(x.type=='router'&&rifs(x).some(i=>i.ip==ip))));return o?`Trùng IP với ${E(o.name)}`:''}
 function insp(){
@@ -206,7 +207,7 @@ function insp(){
   ${S.firewallRules.map((r,i)=>`<div class="cd"><div class="t"><span>${E(r.source)} → ${E(r.dest)}</span><button class="x" onclick="A.rdel(${i})" aria-label="Xóa">✕</button></div></div>`).join('')}
   <div class="r2" style="grid-template-columns:1fr 1fr;margin-top:8px"><input class="i" id="rs" placeholder="Nguồn 10.0.10.0/24"><input class="i" id="rd" placeholder="Đích any"></div>
   <button class="bt" onclick="A.radd()">Thêm quy tắc chặn</button>
-  <h4>Gợi ý</h4><div class="sm mut">Kéo thiết bị từ thanh bên trái · kéo chấm xanh ở mép thiết bị để nối dây · chọn <b>Ping</b> rồi bấm hai thiết bị để kiểm tra đường đi.</div>`}
+  <h4>Gợi ý</h4><div class="sm mut">Kéo thiết bị từ khay bên dưới · kéo chấm xanh ở mép thiết bị để nối dây · chọn <b>Ping</b> rồi bấm hai thiết bị để kiểm tra đường đi.</div>`}
  else{
   h=`<h3>${TY[d.type]}</h3>${fld('Tên',`<input class="i" value="${E(d.name)}" onchange="A.name(this)" spellcheck="false">`)}`;
   if(isH(d)){const dp=dup(d);
@@ -215,17 +216,18 @@ function insp(){
    ${fld('Default gateway',`<input class="i ${d.config.gateway&&ip2n(d.config.gateway)==null?'bad':''}" value="${E(d.config.gateway)}" placeholder="192.168.10.1" oninput="A.chk(this)" onchange="A.cfg('gateway',this.value)">`)}
    <div class="sm mut">Cổng fa0 → ${peerName(d,'fa0')}</div><button class="bt p" onclick="A.ping()">Ping từ ${E(d.name)}</button>`}
   if(d.type=='switch'){
-   h+=`<h4>VLAN</h4><div>${d.vlans.map(v=>`<span class="chip">${v}${v==1?'':`<button class="x" onclick="A.delV(${v})" aria-label="Xóa VLAN ${v}">✕</button>`}</span>`).join('')}</div>
+   h+=mdl(d)+`<h4>VLAN</h4><div>${d.vlans.map(v=>`<span class="chip">${v}${v==1?'':`<button class="x" onclick="A.delV(${v})" aria-label="Xóa VLAN ${v}">✕</button>`}</span>`).join('')}</div>
    <div class="r2" style="grid-template-columns:1fr auto"><input class="i" id="nv" type="number" min="2" max="4094" placeholder="Số VLAN mới"><button class="bt" style="margin:0;width:auto" onclick="A.addV()">Thêm</button></div>
    <h4>Cổng</h4>${ports(d).filter(p=>used(d,p)).map(p=>{const x=peer(d,p),pc=d.ports[x.c.id]||{mode:'access',vlan:1};
     return`<div class="cd"><div class="t"><b>${p}</b><span class="mut">${E(x.d.name)}</span></div><div class="r2" style="grid-template-columns:1fr 1fr"><select class="i" onchange="A.pm('${x.c.id}',this.value)"><option value="access" ${pc.mode=='access'?'selected':''}>Access</option><option value="trunk" ${pc.mode=='trunk'?'selected':''}>Trunk</option></select>
     ${pc.mode=='access'?`<select class="i" onchange="A.pv('${x.c.id}',this.value)">${d.vlans.map(v=>`<option ${v==pc.vlan?'selected':''}>${v}</option>`).join('')}</select>`:`<div class="mut sm" style="padding:8px 2px">Native 1 · mọi VLAN</div>`}</div></div>`}).join('')||'<div class="sm mut">Chưa có dây nối nào.</div>'}`}
   if(d.type=='router'){
-   h+=fld('Model',`<select class="i" onchange="A.model(this.value)"><option ${d.model=='2911'?'selected':''}>2911</option><option ${d.model=='2811'?'selected':''}>2811</option></select>`)+'<h4>Interface</h4>';
+   h+=mdl(d)+'<h4>Interface</h4>';
    ports(d).forEach((p,n)=>{const f=(d.interfaces||[]).find(i=>i.name==p)||{ip:'',cidr:24},subs=(d.interfaces||[]).filter(i=>i.name.startsWith(p+'.'));
     h+=`<div class="cd"><div class="t"><b>${p}</b><span class="mut">${peerName(d,p)}</span></div><div class="r2"><input class="i ${f.ip&&ip2n(f.ip)==null?'bad':''}" value="${E(f.ip)}" placeholder="IP" oninput="A.chk(this)" onchange="A.ifc('${p}','ip',this.value)"><input class="i" type="number" min="1" max="30" value="${f.cidr}" onchange="A.ifc('${p}','cidr',this.value)"></div>
     ${subs.map(s=>`<div class="r3"><span class="sm mut">VLAN ${s.name.split('.')[1]}</span><input class="i ${s.ip&&ip2n(s.ip)==null?'bad':''}" value="${E(s.ip)}" placeholder="IP" oninput="A.chk(this)" onchange="A.ifc('${s.name}','ip',this.value)"><span style="display:flex;gap:4px"><input class="i" type="number" min="1" max="30" value="${s.cidr}" onchange="A.ifc('${s.name}','cidr',this.value)"><button class="x" onclick="A.ifdel('${s.name}')" aria-label="Xóa subinterface">✕</button></span></div>`).join('')}
     <div class="r2" style="grid-template-columns:1fr auto;margin-top:6px"><input class="i" id="sv${n}" type="number" min="1" max="4094" placeholder="Subinterface · VLAN"><button class="bt" style="margin:0;width:auto" onclick="A.sub('${p}',${n})">＋</button></div></div>`})}
+  if((spec(d.model)||{}).ios)h+=`<h4>Lệnh IOS bổ sung (CLI)</h4><textarea class="i" rows="6" spellcheck="false" placeholder="router ospf 1&#10; network 10.0.0.0 0.0.0.255 area 0" onchange="A.cli(this.value)">${E(d.cli)}</textarea><div class="sm mut">pktlib ghép vào file .pkt sau phần cấu hình tạo từ sơ đồ.</div>`;
   h+=`<button class="bt d" onclick="A.del()">Xóa thiết bị</button>`}
  el.innerHTML=h}
 const A=window.A={
@@ -235,10 +237,11 @@ const A=window.A={
  ifc(n,k,v){const r=get(sel);let i=r.interfaces.find(x=>x.name==n);if(!i){i={name:n,ip:'',cidr:24,vlan:n.includes('.')?+n.split('.')[1]:null};r.interfaces.push(i)}i[k]=k=='cidr'?Math.min(30,Math.max(1,+v||24)):v.trim();commit(true)},
  sub(p,n){const r=get(sel),v=+$('#sv'+n).value;if(!(v>=1&&v<=4094))return toast('VLAN phải từ 1 đến 4094.');if(r.interfaces.some(i=>i.name==p+'.'+v))return toast('Subinterface này đã có.');r.interfaces.push({name:p+'.'+v,ip:'',cidr:24,vlan:v});commit()},
  ifdel(n){const r=get(sel);r.interfaces=r.interfaces.filter(i=>i.name!=n);commit()},
- model(v){const r=get(sel);if(v==r.model)return;const np=v=='2811'?['fa0/0','fa0/1']:['g0/0','g0/1','g0/2'],ls=C().filter(c=>c.from==r.id||c.to==r.id);
+ model(v){const r=get(sel);if(v==r.model)return;const np=ports({...r,model:v}),ls=C().filter(c=>c.from==r.id||c.to==r.id);
   if(ls.length>np.length){toast(`Cisco ${v} chỉ có ${np.length} cổng; đang có ${ls.length} dây. Hãy gỡ bớt dây trước.`);return commit()}
   const map={};ls.forEach((c,i)=>{map[myPort(c,r)]=np[i];if(c.from==r.id)c.fromPort=np[i];else c.toPort=np[i]});
-  r.interfaces=r.interfaces.filter(i=>map[i.name.split('.')[0]]).map(i=>{const[b,s]=i.name.split('.');return{...i,name:map[b]+(s?'.'+s:'')}});r.model=v;commit()},
+  if(r.interfaces)r.interfaces=r.interfaces.filter(i=>map[i.name.split('.')[0]]).map(i=>{const[b,s]=i.name.split('.');return{...i,name:map[b]+(s?'.'+s:'')}});r.model=v;commit()},
+ cli(v){get(sel).cli=v;commit(true)},
  lp(e,v){const c=C().find(x=>x.id==selC),d=get(e=='f'?c.from:c.to),old=e=='f'?c.fromPort:c.toPort;if(v!=old&&used(d,v))return toast('Cổng đang được dùng.');
   if(e=='f')c.fromPort=v;else c.toPort=v;if(d.type=='router')d.interfaces.forEach(i=>{const[b,s]=i.name.split('.');if(b==old)i.name=v+(s?'.'+s:'')});commit()},
  pm(id,v){const s=get(sel);s.ports[id]={...s.ports[id],mode:v,vlan:(s.ports[id]||{}).vlan||1};commit()},
@@ -254,7 +257,7 @@ function pick(d){
  if(!ps.src){if(!isH(d))return toast('Ping bắt đầu từ PC hoặc Laptop.');ps.src=d.id;return draw()}
  if(d.id==ps.src)return;const a=get(ps.src);ps=null;tool='select';
  if(d.type=='switch')return toast('Switch không có địa chỉ IP để ping. Hãy chọn PC, Laptop hoặc Router.'),draw();
- const r=pingSim(a,d);showRes(r);anim(r,a);draw()}
+ const r=pingSim(a,d);sim?showRes(r):toast((r.ok?'✓ ':'✕ ')+r.msg);anim(r,a);draw()}
 function showRes(r){res=r;const e=$('#res');e.style.display='block';
  e.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px"><b style="color:var(${r.ok?'--ok':'--bad'})">${r.ok?'✓':'✕'} ${r.ok?'':'Không thông — '}${E(r.msg)}</b><button class="x" id="rx" aria-label="Đóng">✕</button></div><pre>${E(r.lines.join('\n'))}</pre>`;
  $('#rx').onclick=hideRes}
@@ -287,7 +290,7 @@ cv.addEventListener('pointerup',e=>{if(!drag)return;const g=drag;drag=null;
  if(g.t=='link'){const l=$('#tl');l&&l.remove();const o=document.elementFromPoint(e.clientX,e.clientY),n=o&&o.closest('[data-d]');if(n&&n.dataset.d!=g.from.id)connect(g.from,get(n.dataset.d))}});
 cv.addEventListener('wheel',e=>{e.preventDefault();if(e.ctrlKey||e.metaKey){const r=cv.getBoundingClientRect(),k=Math.min(2,Math.max(.4,V.k*Math.exp(-e.deltaY*.01))),x=e.clientX-r.left,y=e.clientY-r.top;V.x=x-(x-V.x)*k/V.k;V.y=y-(y-V.y)*k/V.k;V.k=k}else{V.x-=e.deltaX;V.y-=e.deltaY}paint()},{passive:false});
 document.addEventListener('dragover',e=>e.preventDefault());
-document.addEventListener('drop',e=>{const t=e.dataTransfer.getData('text/plain');if(!TY[t])return;e.preventDefault();const w=W(e);dropAt(t,w.x,w.y)});
+document.addEventListener('drop',e=>{const[t,m]=e.dataTransfer.getData('text/plain').split('|');if(!TY[t])return;e.preventDefault();const w=W(e);dropAt(t,w.x,w.y,m)});
 document.addEventListener('keydown',e=>{
  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;const m=e.metaKey||e.ctrlKey,k=e.key.toLowerCase();
  if(m&&k=='z'){e.preventDefault();undo(e.shiftKey?1:-1)}else if(m&&k=='y'){e.preventDefault();undo(1)}
@@ -295,9 +298,12 @@ document.addEventListener('keydown',e=>{
  else if(k=='escape'){if($('#ms').innerHTML)$('#ms').innerHTML='';$('#pop').style.display='none';hideRes();setTool('select')}
  else if(!m){if(k=='v')setTool('select');else if(k=='c')setTool('link');else if(k=='p')startPing(sel)}});
 /* ---------- Thanh công cụ ---------- */
-$('#dock').innerHTML=Object.keys(TY).map(t=>`<button class="dk" draggable="true" data-t="${t}" title="Kéo vào sơ đồ hoặc bấm để thêm"><svg class="i" viewBox="0 0 24 24">${IC[t]}</svg>${TY[t]}</button>`).join('');
-$('#dock').addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',e.target.closest('.dk').dataset.t)});
-$('#dock').addEventListener('click',e=>{const b=e.target.closest('.dk');if(!b)return;const r=cv.getBoundingClientRect();dropAt(b.dataset.t,(r.width/2-V.x)/V.k,(r.height/2-V.y)/V.k)});
+let gc='router';const GR=[['router','Bộ định tuyến'],['switch','Bộ chuyển mạch'],['end','Thiết bị đầu cuối']];
+function tray(){const T=gc=='end'?['pc','laptop','server']:[gc];$('#dock').innerHTML=`<div id="cats">${GR.map(([g,l])=>`<button class="b${g==gc?' on':''}" data-g="${g}">${l}</button>`).join('')}</div><div id="mods">${CAT.filter(x=>T.includes(FAM[x.family])).map(x=>`<button class="dk" draggable="true" data-t="${FAM[x.family]}" data-m="${x.model}" title="Kéo vào sơ đồ hoặc bấm để thêm"><svg class="ic2" viewBox="0 0 24 24">${IC[FAM[x.family]]}</svg>${x.model}<div class="sm mut">${x.ports.length} cổng</div></button>`).join('')}</div>`}
+$('#dock').addEventListener('dragstart',e=>{const b=e.target.closest('.dk');if(b)e.dataTransfer.setData('text/plain',b.dataset.t+'|'+b.dataset.m)});
+$('#dock').addEventListener('click',e=>{const g=e.target.closest('[data-g]');if(g){gc=g.dataset.g;return tray()}const b=e.target.closest('.dk');if(!b)return;const r=cv.getBoundingClientRect();dropAt(b.dataset.t,(r.width/2-V.x)/V.k,(r.height/2-V.y)/V.k,b.dataset.m)});
+$('#m-r').onclick=$('#m-s').onclick=e=>{sim=e.currentTarget.id=='m-s';$('#m-r').classList.toggle('on',!sim);$('#m-s').classList.toggle('on',sim);if(!sim)hideRes()};
+$('#t-del').onclick=del;
 $('#t-select').onclick=()=>setTool('select');$('#t-link').onclick=()=>setTool('link');$('#t-ping').onclick=()=>startPing(sel);
 $('#un').onclick=()=>undo(-1);$('#re').onclick=()=>undo(1);
 $('#ti').onchange=e=>{S.name=e.target.value.trim().replace(/[^A-Za-z0-9_-]+/g,'_')||'topology';commit(true)};
@@ -316,15 +322,21 @@ $('#op').onclick=()=>$('#fi').click();
 $('#fi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o.devices))throw 0;load(o)}catch(x){toast('Không đọc được tệp sơ đồ này.')}};
 function dl(b,n){const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 /* ---------- Xuất .pkt ---------- */
+async function api(a,x={}){const r=await fetch('/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:a,name:S?S.name:'',devices:S?D():[],connections:S?C():[],firewallRules:S?S.firewallRules:[],...x})}),j=await r.json();if(!r.ok)throw Error(j.error||'Lỗi máy chủ.');return j}
+$('#ip').onclick=()=>$('#fp').click();
+$('#fp').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const u=new Uint8Array(await f.arrayBuffer());let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode(...u.subarray(i,i+8192));
+ const j=await api('import',{pkt:btoa(s),devices:[],connections:[]});j.name=f.name.replace(/\.pkt$/i,'').replace(/[^A-Za-z0-9_-]+/g,'_')||'imported';load(j);if(j.skipped)toast(`Đã bỏ ${j.skipped} thiết bị chưa hỗ trợ (AP, Cloud, Firewall…).`)}catch(x){toast(x.message==='Failed to fetch'?'Cần chạy server.py để nhập .pkt.':x.message)}};
 function pre(){const e=[],w=[],nm=new Set();if(!D().length)e.push('Sơ đồ chưa có thiết bị.');
  D().forEach(d=>{if(!NAME.test(d.name))e.push(`Tên “${d.name}” chỉ dùng chữ, số, - và _, bắt đầu bằng chữ.`);const k=d.name.toLowerCase();if(nm.has(k))e.push(`Tên “${d.name}” bị trùng.`);nm.add(k);
   if(isH(d)){if(!d.config.ip)w.push(`${d.name}: chưa đặt IP.`);else if(ip2n(d.config.ip)==null)e.push(`${d.name}: IP không hợp lệ.`);if(d.config.gateway&&ip2n(d.config.gateway)==null)e.push(`${d.name}: gateway không hợp lệ.`)}
   if(d.type=='router')d.interfaces.forEach(i=>{if(i.ip&&ip2n(i.ip)==null)e.push(`${d.name} ${i.name}: IP không hợp lệ.`)})});return{e,w}}
 $('#ex').onclick=()=>{const{e,w}=pre();
  $('#ms').innerHTML=`<div class="sc" id="sc"><div class="md glass"><h3>Xuất sang Packet Tracer</h3><div class="mut">${D().length} thiết bị · ${C().length} dây nối</div>
- ${e.length?`<ul class="e">${e.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`:'<div style="margin:10px 0;color:var(--ok)">Sơ đồ hợp lệ, sẵn sàng xuất.</div>'}${w.length?`<ul class="w">${w.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`:''}
+ ${e.length?`<ul class="e">${e.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`:'<div style="margin:10px 0;color:var(--ok)">Sơ đồ hợp lệ, sẵn sàng xuất.</div>'}${w.length?`<ul class="w">${w.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`:''}<div id="pm" class="sm mut">${e.length?'':'Đang chạy kiểm tra của pktlib…'}</div>
  ${fld('Tên tệp',`<input class="i" id="fn" value="${E(S.name)}">`)}<div id="em" class="sm" style="color:var(--bad);min-height:16px"></div>
- <div style="display:flex;gap:8px;margin-top:10px"><button class="bt" id="xc">Hủy</button><button class="bt p" id="xg" ${e.length?'disabled':''}>Tạo file .pkt</button></div></div></div>`;
+ <div style="display:flex;gap:8px;margin-top:10px"><button class="bt" id="xc">Hủy</button><button class="bt" id="xp" ${e.length?'disabled':''}>Mã Python</button><button class="bt p" id="xg" ${e.length?'disabled':''}>Tạo file .pkt</button></div></div></div>`;
+ if(!e.length)api('check').then(j=>{$('#pm').innerHTML=j.problems.length?`<ul class="w">${j.problems.map(x=>`<li>${E(x)}</li>`).join('')}</ul>`:'<span style="color:var(--ok)">✓ pktlib kiểm tra: không thấy lỗi trong sơ đồ.</span>'}).catch(x=>{$('#pm').textContent=x.message==='Failed to fetch'?'Chạy server.py để kiểm tra bằng pktlib.':x.message});
+ $('#xp').onclick=()=>api('script').then(j=>dl(new Blob([j.script],{type:'text/x-python'}),S.name+'.py')).catch(x=>toast(x.message));
  $('#xc').onclick=()=>$('#ms').innerHTML='';$('#sc').onclick=ev=>{if(ev.target.id=='sc')$('#ms').innerHTML=''};
  $('#xg').onclick=async()=>{const n=($('#fn').value.trim().replace(/[^A-Za-z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,48))||'topology',b=$('#xg');b.disabled=true;b.textContent='Đang tạo…';
   try{const r=await fetch('/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,devices:D(),connections:C(),firewallRules:S.firewallRules})});
@@ -332,7 +344,9 @@ $('#ex').onclick=()=>{const{e,w}=pre();
    const bl=await r.blob();if(!bl.size)throw new Error('Máy chủ trả về file rỗng.');dl(bl,n+'.pkt');$('#ms').innerHTML='';toast(`Đã tải ${n}.pkt`)}
   catch(x){$('#em').textContent=x.message;b.disabled=false;b.textContent='Tạo file .pkt'}}};
 /* ---------- Khởi động ---------- */
-let saved=null;try{saved=JSON.parse(localStorage.getItem('simulan.v2'))}catch(e){}
-if(saved&&Array.isArray(saved.devices)&&saved.devices.length)load(saved);else preset('basic');
+const FB=[{model:'2911',family:'router',ports:['GigabitEthernet0/0','GigabitEthernet0/1','GigabitEthernet0/2'],ios:true},{model:'2811',family:'router',ports:['FastEthernet0/0','FastEthernet0/1'],ios:true},{model:'2960-24TT',family:'switch',ports:Array.from({length:24},(_,i)=>'FastEthernet0/'+(i+1)),ios:true},{model:'PC-PT',family:'pc',ports:['FastEthernet0']},{model:'Laptop-PT',family:'laptop',ports:['FastEthernet0']},{model:'Server-PT',family:'server',ports:['FastEthernet0']}];
+function boot(){tray();let saved=null;try{saved=JSON.parse(localStorage.getItem('simulan.v2'))}catch(e){}
+ if(saved&&Array.isArray(saved.devices)&&saved.devices.length)load(saved);else preset('basic')}
+api('catalog').then(c=>{CAT=c}).catch(()=>{CAT=FB}).then(()=>{CAT=CAT.filter(x=>FAM[x.family]&&x.model!='Meraki-Server').map(x=>({...x,ports:x.ports.filter(p=>/^(Fast|Gigabit)Ethernet/.test(p))})).filter(x=>x.ports.length);boot()});
 })();
 </script></body></html>

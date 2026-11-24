@@ -50,10 +50,16 @@ class FakeNetwork:
         device.at = at
         return device
 
-    def switch(self, name, at):
+    def switch(self, name, model="2960-24TT", at=None):
         device = self._device(name, "switch")
         device.at = at
         return device
+
+    def laptop(self, name, **kwargs):
+        return self.pc(name, **kwargs)
+
+    def server(self, name, **kwargs):
+        return self.pc(name, **kwargs)
 
     def pc(self, name, **kwargs):
         device = self._device(name, "pc")
@@ -112,7 +118,7 @@ class PacketBuilderTests(unittest.TestCase):
     def test_rejects_unsupported_device_type(self):
         payload = topology()
         payload["devices"].append(
-            {"id": "srv", "type": "server", "name": "Server1", "x": 0, "y": 0, "config": {}}
+            {"id": "srv", "type": "cloud", "name": "Cloud1", "x": 0, "y": 0, "config": {}}
         )
         with self.assertRaisesRegex(TopologyError, "chưa được hỗ trợ"):
             build_pkt_bytes(payload, FakePktlib())

@@ -1,2 +1,1 @@
-pktlib==0.2.2
-
+# pktlib đã được đặt sẵn trong thư mục pktlib/ (chỉ dùng thư viện chuẩn của Python).
