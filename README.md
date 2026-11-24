@@ -1,6 +1,6 @@
 # SimuLAN Studio
 
-Trình thiết kế sơ đồ mạng chạy trên trình duyệt, dựa trên giao diện SimuLAN và bổ sung xuất file Cisco Packet Tracer `.pkt`.
+Trình thiết kế và mô phỏng sơ đồ mạng chạy trên trình duyệt, giao diện viết lại theo phong cách Apple, có xuất file Cisco Packet Tracer `.pkt`.
 
 ## Chạy trên máy tính
 
@@ -19,7 +19,7 @@ python server.py
 
 Mở [http://127.0.0.1:8000](http://127.0.0.1:8000). Sơ đồ chạy trong trình duyệt; API chỉ nhận dữ liệu khi bạn bấm **Xuất .pkt**.
 
-> Nếu chỉ mở `index.html` trực tiếp hoặc dùng `python -m http.server`, giao diện vẫn chạy nhưng chức năng xuất cần API. Dùng `server.py` để chạy cả hai phần.
+> > Nếu chỉ mở `index.html` trực tiếp, thiết kế và mô phỏng vẫn chạy; chức năng xuất cần API nên hãy dùng `server.py`.
 
 ## Đưa lên GitHub và Vercel
 
@@ -32,13 +32,16 @@ Vercel cài thư viện từ `requirements.txt`. Python runtime mặc định đ
 
 ## Dùng nhanh
 
-- Kéo PC, Router hoặc Switch vào vùng sơ đồ.
-- Nối thiết bị bằng nút **Nối thiết bị** hoặc phím `C`.
-- Cổng switch được gán tự động; có thể đổi cổng trong phần cấu hình VLAN của switch.
-- Chọn router để đổi model 2911/2811 và cấu hình cổng.
-- Nhập IP/CIDR, gateway, VLAN hoặc ACL. Cấu hình IP được lưu khi rời trường nhập.
-- Chọn **Xuất .pkt**, xem phần kiểm tra, rồi tạo file.
-- **Lưu sơ đồ** tải JSON về máy; đây là định dạng riêng để tiếp tục chỉnh sửa trong SimuLAN Studio.
+- Kéo PC, Laptop, Switch hoặc Router từ thanh bên trái vào sơ đồ (hoặc bấm để thêm).
+- Nối dây: kéo chấm xanh ở mép thiết bị sang thiết bị kia, hoặc chọn **Nối dây** (`C`). Cổng được gán tự động; chọn dây để đổi cổng.
+- **Ping** (`P`): chọn PC/Laptop nguồn rồi bấm thiết bị đích. Kết quả hiện từng bước ARP, định tuyến, ACL.
+- Switch: tạo VLAN, đặt từng cổng Access/Trunk. Router: nhập IP từng cổng, thêm subinterface theo VLAN (router-on-a-stick).
+- `⌘Z` / `⇧⌘Z` hoàn tác, `Delete` xóa, `Esc` thoát chế độ. Sơ đồ tự lưu trong trình duyệt; **Lưu**/**Mở** dùng tệp JSON.
+- **Xuất .pkt**: kiểm tra, rồi tạo file Packet Tracer.
+
+## Mô phỏng
+
+Bộ mô phỏng theo đúng thứ tự mạng thật: host so sánh subnet, ARP tới đích hoặc gateway, switch chuyển khung theo VLAN (access/trunk, native VLAN 1, khung có tag bị chặn ở cổng access), router định tuyến giữa các interface đã cấu hình, ACL chặn ở chiều vào, gói trả lời cũng bị kiểm tra ACL. Chưa có định tuyến tĩnh/động nên chỉ định tuyến giữa các mạng nối trực tiếp với một router.
 
 ## Hỗ trợ xuất
 
@@ -49,25 +52,16 @@ Vercel cài thư viện từ `requirements.txt`. Python runtime mặc định đ
 | Switch | Switch mặc định của pktlib, cổng FastEthernet |
 | VLAN access/trunk | Cấu hình IOS trên switch |
 | IP, subnet, gateway | Cấu hình host hoặc interface router |
-| Router subinterface có VLAN | Cấu hình encapsulation dot1Q và IP |
-| ACL deny | Extended ACL áp dụng inbound trên các cổng router |
+| Subinterface có VLAN | encapsulation dot1Q và IP |
+| ACL chặn | Extended ACL áp dụng inbound trên các cổng router |
 
-Server, Printer, AP, Firewall và Cloud vẫn có trong mô phỏng SimuLAN nhưng chưa được chuyển sang thiết bị Packet Tracer. Màn hình kiểm tra sẽ báo rõ nếu sơ đồ còn loại thiết bị đó.
+Thư viện thiết bị chỉ gồm loại xuất được, nên mọi thứ trên sơ đồ đều có trong file .pkt.
 
-Cổng dây được chọn tự động bởi pktlib theo hai đầu kết nối. Các liên kết serial và cấu hình định tuyến nâng cao chưa có trong schema xuất hiện tại.
-
-## Kiểm tra giao diện
-
-Có thể chạy smoke test bằng Playwright nếu đã cài browser Chromium:
+## Kiểm thử
 
 ```bash
-pip install -r requirements-dev.txt
-python -m playwright install chromium
 python -m unittest discover -s tests -p "test_*.py"
-python tests/ui_smoke.py
 ```
-
-Test dùng phản hồi .pkt giả để kiểm tra modal, preflight và thao tác tải file; nó không thay thế kiểm thử mở file bằng Packet Tracer.
 
 ## Thư viện và giấy phép
 
